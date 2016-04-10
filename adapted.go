@@ -30,40 +30,44 @@ func contains(s string, c byte) bool {
 	return false
 }
 
-func findExecutable(file string) error {
+func findPath(file string) (bool, error) {
 	d, err := os.Stat(file)
 	if err != nil {
-		return err
+		return false, err
 	}
-	if m := d.Mode(); !m.IsDir() && m&0111 != 0 {
-		return nil
+
+	m := d.Mode()
+	if m.IsDir() {
+		return false, nil
+	} else if m&0111 != 0 {
+		return true, nil
 	}
-	return os.ErrPermission
+	return false, os.ErrPermission
 }
 
-func LookPath(file string) (string, error) {
+func LookPath(file string) (string, bool, error) {
 	cnf := "command not found"
 
 	// Only bypass the path if file begins with / or ./ or ../
 	prefix := file + "   "
 	if prefix[0:1] == "/" || prefix[0:2] == "./" || prefix[0:3] == "../" {
-		err := findExecutable(file)
+		exe, err := findPath(file)
 		if err == nil {
-			return file, nil
+			return file, exe, nil
 		}
-		return "", &pathError{file, err.Error()}
+		return "", false, &pathError{file, err.Error()}
 	}
 	pathenv := os.Getenv("PATH")
 	if pathenv == "" {
-		return "", &pathError{file, cnf}
+		return "", false, &pathError{file, cnf}
 	}
 	for _, dir := range strings.Split(pathenv, ":") {
 		path := dir + "/" + file
-		if err := findExecutable(path); err == nil {
-			return path, nil
+		if exe, err := findPath(path); err == nil {
+			return path, exe, nil
 		}
 	}
-	return "", &pathError{file, cnf}
+	return "", false, &pathError{file, cnf}
 }
 
 func Quote(s string) string {
@@ -119,7 +123,6 @@ func Quote(s string) string {
 	}
 	buf = append(buf, '"')
 	return string(buf)
-
 }
 
 func Unquote(s string) (t string, err error) {
