@@ -45,7 +45,7 @@ func findPath(file string) (bool, error) {
 	return false, os.ErrPermission
 }
 
-func LookPath(file string) (string, bool, error) {
+func LookPath(pathenv, file string) (string, bool, error) {
 	cnf := "command not found"
 
 	// Only bypass the path if file begins with / or ./ or ../
@@ -57,7 +57,6 @@ func LookPath(file string) (string, bool, error) {
 		}
 		return "", false, &pathError{file, err.Error()}
 	}
-	pathenv := os.Getenv("PATH")
 	if pathenv == "" {
 		return "", false, &pathError{file, cnf}
 	}
