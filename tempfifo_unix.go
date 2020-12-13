@@ -1,21 +1,25 @@
+// Copyright 2010 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// +build linux darwin dragonfly freebsd openbsd netbsd solaris
+// +build aix darwin dragonfly freebsd linux netbsd openbsd solaris
 
 package adapted
 
 import (
-	"golang.org/x/sys/unix"
 	"os"
 	"path/filepath"
 	"strconv"
 	"sync"
 	"time"
+
+	"golang.org/x/sys/unix"
 )
 
-var rand uint32
-var randmu sync.Mutex
+var (
+	rand   uint32
+	randmu sync.Mutex
+)
 
 func reseed() uint32 {
 	return uint32(time.Now().UnixNano() + int64(os.Getpid()))
@@ -39,7 +43,7 @@ func TempFifo(prefix string) (name string, err error) {
 	nconflict := 0
 	for i := 0; i < 10000; i++ {
 		name = filepath.Join(dir, prefix+nextSuffix())
-		err = unix.Mkfifo(name, 0600)
+		err = unix.Mkfifo(name, 0o600)
 		if os.IsExist(err) {
 			if nconflict++; nconflict > 10 {
 				rand = reseed()
@@ -50,4 +54,3 @@ func TempFifo(prefix string) (name string, err error) {
 	}
 	return
 }
-
